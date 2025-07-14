@@ -55,6 +55,33 @@ const Header: React.FC = () => {
             >
               🚪 Logout
             </button>
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate("/issue");
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+            >
+              🪙 Issue Token
+            </button>
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate("/my-tokens");
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+            >
+              📥 My Tokens
+            </button>
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate("/history");
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+            >
+              📄 Token History
+            </button>
           </div>
         )}
       </div>
