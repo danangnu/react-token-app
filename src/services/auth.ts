@@ -1,8 +1,30 @@
 import { jwtDecode } from "jwt-decode";
 
-interface TokenPayload {
-  name: string; // this matches ClaimTypes.Name from .NET
+export interface TokenPayload {
+  name: string;
+  role: string;
   exp: number;
+}
+
+export function getToken(): string | null {
+  return localStorage.getItem("token");
+}
+
+export function getUserFromToken(): TokenPayload | null {
+  const token = getToken();
+  if (!token) return null;
+
+  try {
+    const decoded = jwtDecode<TokenPayload>(token);
+    const now = Date.now() / 1000;
+    if (decoded.exp < now) {
+      localStorage.removeItem("token");
+      return null;
+    }
+    return decoded;
+  } catch {
+    return null;
+  }
 }
 
 export function getLoggedInUsername(): string | null {

@@ -8,6 +8,8 @@ import PublicLayout from "./layouts/PublicLayout";
 import AdminLayout from "./layouts/AdminLayout"; // Optional
 import Forbidden403 from "./pages/Forbidden403";
 import NotFound404 from "./pages/NotFound404";
+import Register from "./pages/Register";
+import Profile from "./pages/Profile";
 
 function App() {
   return (
@@ -16,6 +18,7 @@ function App() {
         {/* Public Pages */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Route>
 
         {/* Protected User Pages */}
@@ -27,6 +30,7 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
 
         {/* Optional Admin-Only Pages */}
