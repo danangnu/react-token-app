@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# binaries
+bin/
+lib/
+
+# editors
+*.swp
+.vs/
+.vscode/
+.DS_Store

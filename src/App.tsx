@@ -1,35 +1,49 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import AdminPanel from "./pages/AdminPanel";
+import RequireAuth from "./components/RequireAuth";
+import ProtectedLayout from "./layouts/ProtectedLayout";
+import PublicLayout from "./layouts/PublicLayout";
+import AdminLayout from "./layouts/AdminLayout"; // Optional
+import Forbidden403 from "./pages/Forbidden403";
+import NotFound404 from "./pages/NotFound404";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <BrowserRouter>
+      <Routes>
+        {/* Public Pages */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<Login />} />
+        </Route>
+
+        {/* Protected User Pages */}
+        <Route
+          element={
+            <RequireAuth>
+              <ProtectedLayout />
+            </RequireAuth>
+          }
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
+
+        {/* Optional Admin-Only Pages */}
+        <Route
+          element={
+            <RequireAuth role="admin">
+              <AdminLayout />
+            </RequireAuth>
+          }
+        >
+          <Route path="/admin" element={<AdminPanel />} />
+        </Route>
+        <Route path="/403" element={<Forbidden403 />} />
+        <Route path="*" element={<NotFound404 />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
