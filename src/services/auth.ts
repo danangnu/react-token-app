@@ -6,6 +6,14 @@ export interface TokenPayload {
   exp: number;
 }
 
+interface DecodedToken {
+  username: string;
+  role: string;
+  exp: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
+}
+
 export function getToken(): string | null {
   return localStorage.getItem("token");
 }
@@ -39,11 +47,24 @@ export function getLoggedInUsername(): string | null {
       return null;
     }
     return decoded.name;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (err) {
     console.error("Invalid token");
     return null;
   }
 }
+
+export const getUserRole = (): string | null => {
+  const token = getToken();
+  if (!token) return null;
+
+  try {
+    const decoded = jwtDecode<DecodedToken>(token);
+    return decoded.role || null;
+  } catch {
+    return null;
+  }
+};
 
 export function logout() {
   localStorage.removeItem("token");

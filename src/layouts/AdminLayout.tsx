@@ -1,11 +1,13 @@
+import React from "react";
 import { Outlet } from "react-router-dom";
-import Header from "../components/Header";
 
-const AdminLayout = () => {
+const AdminLayout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header />
-      <main className="p-6 text-red-800">
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-gray-800 text-white px-6 py-4">
+        <h1 className="text-xl font-semibold">Admin Panel</h1>
+      </header>
+      <main className="p-6">
         <Outlet />
       </main>
     </div>

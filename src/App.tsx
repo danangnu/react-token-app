@@ -14,6 +14,10 @@ import IssueToken from "./pages/IssueToken";
 import MyTokens from "./pages/MyTokens";
 import TransferToken from "./pages/TransferToken";
 import Inbox from "./pages/Inbox";
+import RequireAdmin from "./components/RequireAdmin";
+import AdminDashboard from "./pages/AdminDashboard";
+import UserManagement from "./pages/UserManagement";
+import TokenMonitor from "./pages/TokenMonitor";
 
 function App() {
   return (
@@ -45,12 +49,15 @@ function App() {
         {/* Optional Admin-Only Pages */}
         <Route
           element={
-            <RequireAuth role="admin">
+            <RequireAdmin>
               <AdminLayout />
-            </RequireAuth>
+            </RequireAdmin>
           }
         >
           <Route path="/admin" element={<AdminPanel />} />
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="tokens" element={<TokenMonitor />} />
         </Route>
         <Route path="/403" element={<Forbidden403 />} />
         <Route path="*" element={<NotFound404 />} />
