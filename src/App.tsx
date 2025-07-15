@@ -12,6 +12,8 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import IssueToken from "./pages/IssueToken";
 import MyTokens from "./pages/MyTokens";
+import TransferToken from "./pages/TransferToken";
+import Inbox from "./pages/Inbox";
 
 function App() {
   return (
@@ -35,6 +37,8 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/issue" element={<IssueToken />} />
           <Route path="/my-tokens" element={<MyTokens />} />
+          <Route path="/transfer" element={<TransferToken />} />
+          <Route path="/inbox" element={<Inbox />} />
 
         </Route>
 
