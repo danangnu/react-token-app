@@ -1,26 +1,32 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+// src/App.tsx
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Login } from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import { PrivateRoute } from './components/PrivateRoute';
+import { useAuth } from './context/AuthContext';
+import Register from './pages/Register';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Routes>
+      <Route path="/" element={<NavigateToLoginOrDashboard />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/dashboard/*"
+        element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        }
+      />
+    </Routes>
   );
 }
+
+const NavigateToLoginOrDashboard = () => {
+  const { user } = useAuth();
+  return user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />;
+};
 
 export default App;
