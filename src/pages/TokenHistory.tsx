@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
 interface TokenHistoryItem {
+  id: string;
   type: string;
   partnerUsername: string;
   amount: number;
@@ -16,6 +17,7 @@ const TokenHistory = () => {
   const [tokens, setTokens] = useState<TokenHistoryItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [processingTokenId, setProcessingTokenId] = useState<string | null>(null);
 
   const baseUrl = process.env.REACT_APP_API_BASE_URL;
 
@@ -47,6 +49,35 @@ const TokenHistory = () => {
 
     fetchHistory();
   }, [user]);
+
+  const handleAction = async (tokenId: string, action: 'accept' | 'decline') => {
+    try {
+      setProcessingTokenId(tokenId);
+      await axios.post(
+        `${baseUrl}/token/${tokenId}/${action}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+      setTokens(prev =>
+        prev
+          ? prev.map(t =>
+              t.id === tokenId
+                ? { ...t, status: action === 'accept' ? 'accepted' : 'declined' }
+                : t
+            )
+          : null
+      );
+    } catch (err) {
+      console.error(`Failed to ${action} token:`, err);
+    } finally {
+      setProcessingTokenId(null);
+    }
+  };
+
 
   if (loading) return <div className="text-white p-4">🔄 Loading token history...</div>;
   if (error) return <div className="text-red-500 p-4">❌ {error}</div>;
@@ -85,7 +116,36 @@ const TokenHistory = () => {
                 <td className="px-4 py-2">{token.type}</td>
                 <td className="px-4 py-2">{token.partnerUsername || '–'}</td>
                 <td className="px-4 py-2">{token.amount}</td>
-                <td className="px-4 py-2 capitalize">{token.status}</td>
+                <td className="px-4 py-2">
+                  {token.status.toLowerCase() === 'pending' ? (
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleAction(token.id, 'accept')}
+                        disabled={processingTokenId === token.id}
+                        className={`px-3 py-1 rounded text-white font-semibold ${
+                          processingTokenId === token.id
+                            ? 'bg-gray-500 cursor-not-allowed'
+                            : 'bg-green-600 hover:bg-green-700'
+                        }`}
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleAction(token.id, 'decline')}
+                        disabled={processingTokenId === token.id}
+                        className={`px-3 py-1 rounded text-white font-semibold ${
+                          processingTokenId === token.id
+                            ? 'bg-gray-500 cursor-not-allowed'
+                            : 'bg-red-600 hover:bg-red-700'
+                        }`}
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="capitalize">{token.status}</span>
+                  )}
+                </td>
                 <td className="px-4 py-2">{token.remarks || '-'}</td>
               </tr>
             ))}
