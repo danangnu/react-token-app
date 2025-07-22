@@ -33,20 +33,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedUser = localStorage.getItem("user");
-    const decoded = jwtDecode<DecodedToken>(savedToken || '');
-    const expDate = new Date(decoded.exp * 1000).toLocaleString("en-US", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+
     if (savedToken && savedUser) {
-      setToken(savedToken);
-      const parsedUser = JSON.parse(savedUser);
-      parsedUser.expiration = expDate; // Add expiration to user object
-      setUser(parsedUser);
+      try {
+        const parts = savedToken.split(".");
+        if (parts.length !== 3) {
+          throw new Error("Invalid JWT token format.");
+        }
+
+        const decoded = jwtDecode<DecodedToken>(savedToken);
+        const expDate = new Date(decoded.exp * 1000).toLocaleString("en-US", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+
+        const parsedUser: User = JSON.parse(savedUser);
+        parsedUser.expiration = expDate;
+        setUser(parsedUser);
+        setToken(savedToken);
+      } catch (error) {
+        console.error("Token decoding error:", error);
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
     }
   }, []);
 
@@ -76,4 +91,3 @@ export const useAuth = () => {
   if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };
-
