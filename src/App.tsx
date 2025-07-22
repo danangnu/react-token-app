@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import { PrivateRoute } from './components/PrivateRoute';
 import { useAuth } from './context/AuthContext';
 import Register from './pages/Register';
+import 'reactflow/dist/style.css';
 
 function App() {
   return (

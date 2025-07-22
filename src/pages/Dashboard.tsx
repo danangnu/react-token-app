@@ -7,12 +7,13 @@ import TokenHistory from './TokenHistory';
 import IssueTokenForm from '../components/IssueTokenForm';
 import SentTokenList from './SentTokens';
 import TransferTokenForm from '../components/TransferTokenForm';
+import DetectLoopsPage from './DetectLoopsPage'; // ✅ NEW IMPORT
 
 import {
   UserPlusIcon,
   InboxArrowDownIcon,
   ArrowPathIcon,
-  DocumentTextIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 import { useAuth } from '../context/AuthContext';
@@ -21,7 +22,8 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [view, setView] = useState<'profile' | 'history' | 'issue' | 'sent' | 'transfer'>('profile');
+  // ✅ Updated type to include 'loops'
+  const [view, setView] = useState<'profile' | 'history' | 'issue' | 'sent' | 'transfer' | 'loops'>('profile');
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -86,6 +88,7 @@ const Dashboard = () => {
           {view === 'issue' && <IssueTokenForm />}
           {view === 'sent' && <SentTokenList />}
           {view === 'transfer' && <TransferTokenForm />}
+          {view === 'loops' && <DetectLoopsPage />} {/* ✅ New Component */}
         </div>
       </main>
     </div>

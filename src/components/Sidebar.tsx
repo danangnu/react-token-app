@@ -5,13 +5,14 @@ import {
   DocumentTextIcon,
   ArrowPathIcon,
   InboxArrowDownIcon,
-  UserPlusIcon
+  UserPlusIcon,
+  ExclamationTriangleIcon // New icon for Detect Loops
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
   onLogout: () => void;
-  currentView: 'profile' | 'history' | 'issue' | 'sent' | 'transfer';
-  setView: (view: 'profile' | 'history' | 'issue' | 'sent' | 'transfer') => void;
+  currentView: 'profile' | 'history' | 'issue' | 'sent' | 'transfer' | 'loops';
+  setView: (view: 'profile' | 'history' | 'issue' | 'sent' | 'transfer' | 'loops') => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ onLogout, currentView, setView }) => {
@@ -40,10 +41,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, currentView, setView }) => 
           <DocumentTextIcon className="w-5 h-5" />
           <span>Token History</span>
         </button>
+
+        {/* 🔁 Detect Loops */}
+        <button className={linkClass('loops')} onClick={() => setView('loops')}>
+          <ExclamationTriangleIcon className="w-5 h-5" />
+          <span>Detect Loops</span>
+        </button>
+
         <button className={linkClass('profile')} onClick={() => setView('profile')}>
           <UserCircleIcon className="w-5 h-5" />
           <span>View Profile</span>
         </button>
+
         <button
           onClick={onLogout}
           className="flex items-center space-x-2 text-gray-300 hover:text-red-500 mt-4"
