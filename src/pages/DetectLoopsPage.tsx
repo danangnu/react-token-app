@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import ReactFlow, { Background, Controls, Edge, Node, Position } from 'reactflow';
 import 'reactflow/dist/style.css';
+import api from '../api';
 
 interface Debt {
   id: number;
@@ -21,10 +21,10 @@ const DetectLoopsPage: React.FC = () => {
     setLoading(true);
     try {
       const endpoint = viewAfterOffset
-        ? '/api/debts/offset-cycles'
-        : '/api/debts/cycles';
+        ? '/debts/offset-cycles'
+        : '/debts/cycles';
 
-      const response = await axios[viewAfterOffset ? 'post' : 'get'](endpoint);
+      const response = await api[viewAfterOffset ? 'post' : 'get'](endpoint);
       setCycles(response.data);
       setCurrentIndex(0);
     } catch (err) {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import DebtActivityTimeline from '../components/DebtActivityTimeline'; // ✅ import timeline
+import DebtActivityTimeline from '../components/DebtActivityTimeline';
+import api from '../api'; // ✅ Import centralized API client
 
 interface DebtRecord {
   id: number;
@@ -15,23 +16,27 @@ const AllDebtsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/debts/all')
-      .then((res) => res.json())
-      .then((data) => {
-        setDebts(data);
-        setLoading(false);
-      })
-      .catch((err) => {
+    const fetchDebts = async () => {
+      try {
+        const response = await api.get('/debts/all', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          }
+        });
+        setDebts(response.data);
+      } catch (err) {
         console.error('Failed to load debts:', err);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchDebts();
   }, []);
 
   const handleSettle = async (id: number) => {
     try {
-      await fetch(`/api/debts/${id}/settle`, {
-        method: 'POST',
-      });
+      await api.post(`/debts/${id}/settle`);
       setDebts((prev) =>
         prev.map((debt) =>
           debt.id === id ? { ...debt, isSettled: true } : debt

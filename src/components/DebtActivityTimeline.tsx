@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import api from '../api';
 
 interface Activity {
   id: number;
@@ -15,7 +16,10 @@ const DebtActivityTimeline: React.FC = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
 
   useEffect(() => {
-    axios.get('/api/debt/activity').then((res) => setActivities(res.data));
+    api.get('/debts/activity', {headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        }
+    }).then((res) => setActivities(res.data));
   }, []);
 
   return (
