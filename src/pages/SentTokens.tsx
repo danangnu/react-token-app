@@ -15,7 +15,11 @@ const SentTokens: React.FC = () => {
   useEffect(() => {
     const fetchSentTokens = async () => {
       try {
-        const res = await api.get('/token/sent'); // adjust your backend route
+        const res = await api.get('/token/sent', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          }
+        }); // adjust your backend route
         setTokens(res.data);
       } catch (err) {
         console.error('Failed to fetch sent tokens:', err);
