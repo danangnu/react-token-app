@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import api from '../api';
-import DebtActivityTimeline from '../components/DebtActivityTimeline'; // ✅ import
+import DebtActivityTimeline from '../components/DebtActivityTimeline';
+import DebtGraph from '../components/DebtGraph'; // ✅ Import graph component
 
 interface DebtSummary {
   totalDebt: number;
@@ -74,6 +74,12 @@ const DebtDashboard: React.FC = () => {
       <div className="bg-gray-800 p-4 rounded-lg shadow">
         <h3 className="text-xl font-semibold mb-4">Recent Debt Activity</h3>
         <DebtActivityTimeline />
+      </div>
+
+      {/* 🧠 Debt Relationship Graph */}
+      <div className="bg-gray-800 p-4 rounded-lg shadow">
+        <h3 className="text-xl font-semibold mb-4">Debt Relationship Graph</h3>
+        <DebtGraph />
       </div>
     </div>
   );

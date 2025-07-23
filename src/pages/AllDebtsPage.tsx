@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import DebtActivityTimeline from '../components/DebtActivityTimeline';
-import api from '../api'; // ✅ Import centralized API client
-
-interface DebtRecord {
-  id: number;
-  debtor: string;
-  creditor: string;
-  amount: number;
-  remarks?: string;
-  isSettled: boolean;
-}
+import RepayDebtModal from '../components/RepayDebtModal'; // ✅ Import modal
+import api from '../api'; // ✅ Centralized API client
+import { DebtRecord } from '../types/debt';
 
 const AllDebtsPage: React.FC = () => {
   const [debts, setDebts] = useState<DebtRecord[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ Modal state
+  const [selectedDebt, setSelectedDebt] = useState<DebtRecord | null>(null);
+  const [showRepayModal, setShowRepayModal] = useState(false);
 
   useEffect(() => {
     const fetchDebts = async () => {
@@ -21,7 +18,7 @@ const AllDebtsPage: React.FC = () => {
         const response = await api.get('/debts/all', {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
-          }
+          },
         });
         setDebts(response.data);
       } catch (err) {
@@ -45,6 +42,11 @@ const AllDebtsPage: React.FC = () => {
     } catch (err) {
       console.error('Failed to settle debt:', err);
     }
+  };
+
+  const openRepayModal = (debt: DebtRecord) => {
+    setSelectedDebt(debt);
+    setShowRepayModal(true);
   };
 
   return (
@@ -72,7 +74,10 @@ const AllDebtsPage: React.FC = () => {
               </thead>
               <tbody>
                 {debts.map((debt) => (
-                  <tr key={debt.id} className="border-b border-gray-700 hover:bg-gray-700">
+                  <tr
+                    key={debt.id}
+                    className="border-b border-gray-700 hover:bg-gray-700"
+                  >
                     <td className="py-2 px-4">{debt.debtor}</td>
                     <td className="py-2 px-4">{debt.creditor}</td>
                     <td className="py-2 px-4">{debt.amount}</td>
@@ -81,12 +86,20 @@ const AllDebtsPage: React.FC = () => {
                       {debt.isSettled ? (
                         <span className="text-green-400">Settled</span>
                       ) : (
-                        <button
-                          onClick={() => handleSettle(debt.id)}
-                          className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white text-sm"
-                        >
-                          Settle
-                        </button>
+                        <div className="space-x-2">
+                          <button
+                            onClick={() => handleSettle(debt.id)}
+                            className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white text-sm"
+                          >
+                            Settle
+                          </button>
+                          <button
+                            onClick={() => openRepayModal(debt)}
+                            className="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-white text-sm"
+                          >
+                            Repay
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -108,6 +121,20 @@ const AllDebtsPage: React.FC = () => {
           <DebtActivityTimeline />
         </div>
       </div>
+
+      {/* 💳 Repay Modal */}
+      {selectedDebt && (
+        <RepayDebtModal
+          show={showRepayModal}
+          onClose={() => setShowRepayModal(false)}
+          debt={selectedDebt}
+          onRepaySuccess={(updatedDebt: DebtRecord) => {
+            setDebts((prev) =>
+              prev.map((d) => (d.id === updatedDebt.id ? updatedDebt : d))
+            );
+          }}
+        />
+      )}
     </div>
   );
 };
