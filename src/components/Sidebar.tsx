@@ -1,24 +1,37 @@
-import React from 'react';
-import { 
+import React, { useState } from 'react';
+import {
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
   DocumentTextIcon,
   ArrowPathIcon,
   InboxArrowDownIcon,
   UserPlusIcon,
-  ExclamationTriangleIcon // New icon for Detect Loops
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
   onLogout: () => void;
-  currentView: 'profile' | 'history' | 'issue' | 'sent' | 'transfer' | 'loops';
-  setView: (view: 'profile' | 'history' | 'issue' | 'sent' | 'transfer' | 'loops') => void;
+  currentView:
+    | 'profile'
+    | 'history'
+    | 'issue'
+    | 'sent'
+    | 'transfer'
+    | 'loops'
+    | 'overview';
+  setView: (view: SidebarProps['currentView']) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ onLogout, currentView, setView }) => {
+  const [debtExpanded, setDebtExpanded] = useState(true);
+
   const linkClass = (view: string) =>
     `flex items-center space-x-2 ${
-      currentView === view ? 'text-blue-500 font-semibold' : 'text-white hover:text-blue-400'
+      currentView === view
+        ? 'text-blue-500 font-semibold'
+        : 'text-white hover:text-blue-400'
     }`;
 
   return (
@@ -42,11 +55,32 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, currentView, setView }) => 
           <span>Token History</span>
         </button>
 
-        {/* 🔁 Detect Loops */}
-        <button className={linkClass('loops')} onClick={() => setView('loops')}>
-          <ExclamationTriangleIcon className="w-5 h-5" />
-          <span>Detect Loops</span>
-        </button>
+        {/* 🔽 Collapsible Debt section */}
+        <div>
+          <button
+            onClick={() => setDebtExpanded(!debtExpanded)}
+            className="flex items-center space-x-2 text-white hover:text-blue-400"
+          >
+            {debtExpanded ? (
+              <ChevronDownIcon className="w-5 h-5" />
+            ) : (
+              <ChevronRightIcon className="w-5 h-5" />
+            )}
+            <span>Debt</span>
+          </button>
+          {debtExpanded && (
+            <div className="ml-6 mt-2 space-y-2">
+              <button className={linkClass('loops')} onClick={() => setView('loops')}>
+                <ExclamationTriangleIcon className="w-4 h-4" />
+                <span>Detect Loops</span>
+              </button>
+              <button className={linkClass('overview')} onClick={() => setView('overview')}>
+                <DocumentTextIcon className="w-4 h-4" />
+                <span>All Debts Overview</span>
+              </button>
+            </div>
+          )}
+        </div>
 
         <button className={linkClass('profile')} onClick={() => setView('profile')}>
           <UserCircleIcon className="w-5 h-5" />

@@ -7,7 +7,8 @@ import TokenHistory from './TokenHistory';
 import IssueTokenForm from '../components/IssueTokenForm';
 import SentTokenList from './SentTokens';
 import TransferTokenForm from '../components/TransferTokenForm';
-import DetectLoopsPage from './DetectLoopsPage'; // ✅ NEW IMPORT
+import DetectLoopsPage from './DetectLoopsPage';
+import AllDebtsPage from './AllDebtsPage'; // ✅ NEW
 
 import {
   UserPlusIcon,
@@ -22,8 +23,10 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // ✅ Updated type to include 'loops'
-  const [view, setView] = useState<'profile' | 'history' | 'issue' | 'sent' | 'transfer' | 'loops'>('profile');
+  // ✅ Add 'overview' to view type
+  const [view, setView] = useState<
+    'profile' | 'history' | 'issue' | 'sent' | 'transfer' | 'loops' | 'overview'
+  >('profile');
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -32,39 +35,46 @@ const Dashboard = () => {
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
-      {/* Sidebar with view switch prop */}
+      {/* Sidebar */}
       <Sidebar onLogout={handleLogout} currentView={view} setView={setView} />
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="flex-1 p-8 overflow-y-auto">
-        {/* Header with welcome and avatar */}
         <Header name={user?.name || user?.username || ''} />
 
-        {/* Action Buttons */}
+        {/* Top Action Buttons */}
         <div className="flex space-x-4 mb-6">
           <button
-            className={`px-4 py-2 rounded flex items-center space-x-2 ${view === 'issue' ? 'bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'}`}
+            className={`px-4 py-2 rounded flex items-center space-x-2 ${
+              view === 'issue' ? 'bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'
+            }`}
             onClick={() => setView('issue')}
           >
             <UserPlusIcon className="w-4 h-4" />
             <span>Issue Token</span>
           </button>
           <button
-            className={`px-4 py-2 rounded flex items-center space-x-2 ${view === 'sent' ? 'bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'}`}
+            className={`px-4 py-2 rounded flex items-center space-x-2 ${
+              view === 'sent' ? 'bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'
+            }`}
             onClick={() => setView('sent')}
           >
             <InboxArrowDownIcon className="w-4 h-4" />
             <span>Sent Tokens</span>
           </button>
           <button
-            className={`px-4 py-2 rounded flex items-center space-x-2 ${view === 'transfer' ? 'bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'}`}
+            className={`px-4 py-2 rounded flex items-center space-x-2 ${
+              view === 'transfer' ? 'bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'
+            }`}
             onClick={() => setView('transfer')}
           >
             <ArrowPathIcon className="w-4 h-4" />
             <span>Transfer Token</span>
           </button>
           <button
-            className={`px-4 py-2 rounded flex items-center space-x-2 ${view === 'history' ? 'bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'}`}
+            className={`px-4 py-2 rounded flex items-center space-x-2 ${
+              view === 'history' ? 'bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'
+            }`}
             onClick={() => setView('history')}
           >
             <DocumentTextIcon className="w-4 h-4" />
@@ -72,7 +82,7 @@ const Dashboard = () => {
           </button>
         </div>
 
-        {/* Conditional Content */}
+        {/* Dynamic Component Section */}
         <div className="bg-gray-800 p-4 rounded-lg">
           {view === 'profile' && user && (
             <ProfileCard
@@ -88,7 +98,8 @@ const Dashboard = () => {
           {view === 'issue' && <IssueTokenForm />}
           {view === 'sent' && <SentTokenList />}
           {view === 'transfer' && <TransferTokenForm />}
-          {view === 'loops' && <DetectLoopsPage />} {/* ✅ New Component */}
+          {view === 'loops' && <DetectLoopsPage />}
+          {view === 'overview' && <AllDebtsPage />} {/* ✅ NEW VIEW */}
         </div>
       </main>
     </div>
