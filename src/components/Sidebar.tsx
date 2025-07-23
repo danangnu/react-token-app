@@ -9,6 +9,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   ExclamationTriangleIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -20,7 +21,8 @@ interface SidebarProps {
     | 'sent'
     | 'transfer'
     | 'loops'
-    | 'overview';
+    | 'overview'
+    | 'dashboard'; // New dashboard view
   setView: (view: SidebarProps['currentView']) => void;
 }
 
@@ -70,6 +72,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout, currentView, setView }) => 
           </button>
           {debtExpanded && (
             <div className="ml-6 mt-2 space-y-2">
+              <button className={linkClass('dashboard')} onClick={() => setView('dashboard')}>
+                <ChartBarIcon className="w-4 h-4" />
+                <span>Debt Dashboard</span>
+              </button>
               <button className={linkClass('loops')} onClick={() => setView('loops')}>
                 <ExclamationTriangleIcon className="w-4 h-4" />
                 <span>Detect Loops</span>

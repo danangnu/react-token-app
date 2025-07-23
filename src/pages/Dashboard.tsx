@@ -8,13 +8,14 @@ import IssueTokenForm from '../components/IssueTokenForm';
 import SentTokenList from './SentTokens';
 import TransferTokenForm from '../components/TransferTokenForm';
 import DetectLoopsPage from './DetectLoopsPage';
-import AllDebtsPage from './AllDebtsPage'; // ✅ NEW
+import AllDebtsPage from './AllDebtsPage';
+import DebtDashboard from './DebtDashboard'; // ✅ Import new component
 
 import {
   UserPlusIcon,
   InboxArrowDownIcon,
   ArrowPathIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 
 import { useAuth } from '../context/AuthContext';
@@ -23,9 +24,9 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // ✅ Add 'overview' to view type
+  // ✅ Add 'dashboard' to view type
   const [view, setView] = useState<
-    'profile' | 'history' | 'issue' | 'sent' | 'transfer' | 'loops' | 'overview'
+    'profile' | 'history' | 'issue' | 'sent' | 'transfer' | 'loops' | 'overview' | 'dashboard'
   >('profile');
 
   const handleLogout = () => {
@@ -93,13 +94,13 @@ const Dashboard = () => {
               expiration={user.expiration}
             />
           )}
-
           {view === 'history' && <TokenHistory />}
           {view === 'issue' && <IssueTokenForm />}
           {view === 'sent' && <SentTokenList />}
           {view === 'transfer' && <TransferTokenForm />}
           {view === 'loops' && <DetectLoopsPage />}
-          {view === 'overview' && <AllDebtsPage />} {/* ✅ NEW VIEW */}
+          {view === 'overview' && <AllDebtsPage />}
+          {view === 'dashboard' && <DebtDashboard />} {/* ✅ New Dashboard View */}
         </div>
       </main>
     </div>
