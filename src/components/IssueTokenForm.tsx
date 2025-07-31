@@ -7,8 +7,8 @@ const IssueTokenForm: React.FC = () => {
   const [amount, setAmount] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
   const [remarks, setRemarks] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [, setSuccess] = useState(false);
+  const [, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

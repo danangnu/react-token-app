@@ -35,6 +35,7 @@ const DetectLoopsPage: React.FC = () => {
 
   useEffect(() => {
     fetchCycles();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewAfterOffset]);
 
   const buildGraphFromCycle = (cycle: Debt[]): { nodes: Node[]; edges: Edge[] } => {

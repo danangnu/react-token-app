@@ -41,7 +41,7 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-8 overflow-y-auto">
-        <Header name={user?.name || user?.username || ''} />
+        <Header name={user?.name || user?.username || ''} onLogout={handleLogout} />
 
         {/* Top Action Buttons */}
         <div className="flex space-x-4 mb-6">

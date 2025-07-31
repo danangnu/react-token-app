@@ -48,7 +48,7 @@ const TokenHistory = () => {
     };
 
     fetchHistory();
-  }, [user]);
+  }, [baseUrl, user]);
 
   const handleAction = async (tokenId: string, action: 'accept' | 'decline') => {
     try {

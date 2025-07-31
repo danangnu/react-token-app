@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 
@@ -10,7 +9,7 @@ interface Token {
 }
 
 const TransferTokenForm = () => {
-  const { user } = useAuth();
+  useAuth();
   const [tokens, setTokens] = useState<Token[]>([]);
   const [selectedTokenId, setSelectedTokenId] = useState<number | null>(null);
   const [recipient, setRecipient] = useState('');

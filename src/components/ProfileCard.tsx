@@ -46,7 +46,4 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
 };
 
 export default ProfileCard;
-function jwt_decode<T>(token: string) {
-  throw new Error('Function not implemented.');
-}
 
