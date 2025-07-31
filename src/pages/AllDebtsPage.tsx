@@ -33,7 +33,9 @@ const AllDebtsPage: React.FC = () => {
 
   const handleSettle = async (id: number) => {
     try {
-      await api.post(`/debts/${id}/settle`);
+      await api.post(`/debts/${id}/settle`,{
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
       setDebts((prev) =>
         prev.map((debt) =>
           debt.id === id ? { ...debt, isSettled: true } : debt
