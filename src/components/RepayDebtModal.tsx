@@ -24,7 +24,11 @@ const RepayDebtModal: React.FC<RepayDebtModalProps> = ({ show, onClose, debt, on
 
     setLoading(true);
     try {
-      const response = await api.post(`/debts/${debt.id}/repay`, { amount: repayAmount });
+      const response = await api.post(`/debts/${debt.id}/repay`, { amount: repayAmount },{
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
       onRepaySuccess(response.data);
       onClose();
     } catch (err) {
