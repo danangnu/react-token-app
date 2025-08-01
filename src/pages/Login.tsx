@@ -17,23 +17,28 @@ export const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const baseUrl = process.env.REACT_APP_API_BASE_URL;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
-        const res = await axios.post(`${baseUrl}/auth/login`, { email, password });
+      const res = await axios.post(`${baseUrl}/auth/login`, { email, password });
 
-        if (res.status === 200) {
+      if (res.status === 200) {
         const { token, ...user } = res.data;
-        login(user, token); // Store in context + localStorage
+        login(user, token);
         navigate("/dashboard");
-        }
+      }
     } catch {
-        alert("Invalid credentials");
+      alert("Invalid credentials");
+    } finally {
+      setLoading(false);
     }
-    };
+  };
+
 
   const handleGoogleLogin = () => {
     if (window.google) {
@@ -87,12 +92,24 @@ export const Login = () => {
               </button>
             </div>
           </div>
-
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-semibold"
+            disabled={loading}
+            className={`w-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-semibold ${
+              loading ? 'opacity-70 cursor-not-allowed' : ''
+            }`}
           >
-            Log in
+            {loading ? (
+              <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                ></path>
+              </svg>
+            ) : null}
+            {loading ? "Logging in..." : "Log in"}
           </button>
         </form>
 
