@@ -1,23 +1,48 @@
-// src/components/IssueTokenForm.tsx
 import React, { useState } from 'react';
-import api from '../api'; // <-- axios instance
+import AsyncSelect from 'react-select/async';
+import api from '../api'; // axios instance
+
+interface OptionType {
+  value: number;
+  label: string;
+}
 
 const IssueTokenForm: React.FC = () => {
-  const [recipient, setRecipient] = useState('');
+  const [selectedRecipient, setSelectedRecipient] = useState<OptionType | null>(null);
   const [amount, setAmount] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
   const [remarks, setRemarks] = useState('');
   const [, setSuccess] = useState(false);
   const [, setError] = useState('');
 
+  const loadOptions = async (inputValue: string): Promise<OptionType[]> => {
+    try {
+      const res = await api.get(`/user/search-users?query=${inputValue}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      return res.data.map((user: any) => ({
+        value: user.username,
+        label: user.display,
+      }));
+    } catch (err) {
+      console.error('Failed to load users:', err);
+      return [];
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuccess(false);
     setError('');
 
+    if (!selectedRecipient) {
+      setError('Please select a recipient.');
+      return;
+    }
+
     try {
       const response = await api.post('/token/issue', {
-        recipient,
+        recipient: selectedRecipient.value,
         amount: Number(amount),
         remarks,
         expirationDate,
@@ -29,7 +54,7 @@ const IssueTokenForm: React.FC = () => {
 
       if (response.status === 200) {
         setSuccess(true);
-        setRecipient('');
+        setSelectedRecipient(null);
         setAmount('');
         setExpirationDate('');
         setRemarks('');
@@ -47,17 +72,44 @@ const IssueTokenForm: React.FC = () => {
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm mb-1">Recipient</label>
-          <input
-            type="text"
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            className="w-full px-4 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
+          <label className="block text-sm mb-1 text-white">Recipient</label>
+          <AsyncSelect
+            cacheOptions
+            defaultOptions
+            loadOptions={loadOptions}
+            value={selectedRecipient}
+            onChange={(option) => setSelectedRecipient(option)}
+            placeholder="Search by name, username, or email"
+            styles={{
+              control: (base) => ({
+                ...base,
+                backgroundColor: '#374151',
+                borderColor: '#4B5563',
+                color: '#fff',
+              }),
+              input: (base) => ({
+                ...base,
+                color: '#fff',
+              }),
+              singleValue: (base) => ({
+                ...base,
+                color: '#fff',
+              }),
+              menu: (base) => ({
+                ...base,
+                backgroundColor: '#1F2937',
+              }),
+              option: (base, state) => ({
+                ...base,
+                backgroundColor: state.isFocused ? '#3B82F6' : '#1F2937',
+                color: '#fff',
+              }),
+            }}
           />
         </div>
+
         <div>
-          <label className="block text-sm mb-1">Amount</label>
+          <label className="block text-sm mb-1 text-white">Amount</label>
           <input
             type="number"
             value={amount}
@@ -66,8 +118,9 @@ const IssueTokenForm: React.FC = () => {
             required
           />
         </div>
+
         <div>
-          <label className="block text-sm mb-1">Expiration Date</label>
+          <label className="block text-sm mb-1 text-white">Expiration Date</label>
           <input
             type="date"
             value={expirationDate}
@@ -75,8 +128,9 @@ const IssueTokenForm: React.FC = () => {
             className="w-full px-4 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+
         <div>
-          <label className="block text-sm mb-1">Remarks</label>
+          <label className="block text-sm mb-1 text-white">Remarks</label>
           <textarea
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
@@ -84,6 +138,7 @@ const IssueTokenForm: React.FC = () => {
             rows={3}
           />
         </div>
+
         <div>
           <button
             type="submit"
