@@ -145,7 +145,11 @@ export const Login = () => {
           </button>
         </form>
 
-        <p className="text-sm text-center mt-4 text-gray-400">Forgot password?</p>
+        <p className="text-sm text-center mt-4 text-gray-400">
+          <Link to="/forgot-password" className="text-blue-400 hover:underline">
+            Forgot password?
+          </Link>
+        </p>
 
         <hr className="my-6 border-gray-700" />
 

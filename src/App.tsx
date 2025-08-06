@@ -7,6 +7,8 @@ import { useAuth } from './context/AuthContext';
 import Register from './pages/Register';
 import 'reactflow/dist/style.css';
 import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPasswordPage from './components/ResetPasswordPage';
 
 function App() {
   return (
@@ -15,6 +17,9 @@ function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+
       <Route
         path="/dashboard/*"
         element={
