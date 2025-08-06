@@ -6,12 +6,14 @@ import { PrivateRoute } from './components/PrivateRoute';
 import { useAuth } from './context/AuthContext';
 import Register from './pages/Register';
 import 'reactflow/dist/style.css';
+import VerifyEmail from './pages/VerifyEmail';
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<NavigateToLoginOrDashboard />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/login" element={<Login />} />
       <Route
         path="/dashboard/*"
