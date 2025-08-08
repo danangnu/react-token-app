@@ -1,83 +1,98 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { FaApple } from "react-icons/fa";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { useAuth } from "../context/AuthContext";
 
+// Extend window to include google.accounts
 declare global {
   interface Window {
-    google: any;
+    google?: any;
   }
 }
 
 export const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const baseUrl = process.env.REACT_APP_API_BASE_URL;
-  const googlePromptShown = useRef(false); // ✅ Prevent duplicate prompts
+  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "";
 
-  // ✅ Manual login
+  // 💡 Regular login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     try {
       const res = await axios.post(`${baseUrl}/auth/login`, { email, password });
-
-      if (res.status === 200) {
-        const { token, ...user } = res.data;
-        login(user, token);
-        navigate("/dashboard");
-      }
-    } catch {
+      const { token, ...user } = res.data;
+      login(user, token);
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Login error:", error);
       alert("Invalid credentials");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Google One Tap init and prompt
+  // ✅ Load Google Identity Services
   useEffect(() => {
-    if (!window.google || googlePromptShown.current) return;
+    if (!document.getElementById("google-client-script")) {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.id = "google-client-script";
+      document.body.appendChild(script);
+    }
+  }, []);
 
-    googlePromptShown.current = true;
+  // ✅ Handle Google login
+  const handleGoogleLogin = () => {
+    if (!window.google || !googleClientId) {
+      alert("Google login is not ready.");
+      return;
+    }
 
-    window.google.accounts.id.initialize({
-      client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || "",
-      callback: async (response: any) => {
+    const codeClient = window.google.accounts.oauth2.initCodeClient({
+      client_id: googleClientId,
+      scope: "openid email profile",
+      ux_mode: "popup",
+      redirect_uri: "postmessage",
+      callback: async (response: { code: string }) => {
+        if (!response.code) {
+          alert("Google login failed.");
+          return;
+        }
+
         try {
           const backendRes = await axios.post(`${baseUrl}/auth/google-login`, {
-            id_token: response.credential,
+            code: response.code,
           });
 
           const { token, ...user } = backendRes.data;
           login(user, token);
           navigate("/dashboard");
-        } catch (error) {
-          console.error("Google login failed:", error);
+        } catch (err) {
+          console.error("Google login failed:", err);
           alert("Google login failed.");
         }
       },
-      use_fedcm_for_prompt: true, // ✅ future-proofing
     });
 
-    window.google.accounts.id.prompt((notification: any) => {
-      if (notification.isNotDisplayed()) {
-        console.warn("Google login not displayed:", notification.getNotDisplayedReason?.());
-      }
-      if (notification.isSkippedMoment()) {
-        console.warn("Google login skipped:", notification.getSkippedReason?.());
-      }
-    });
-  }, [baseUrl, login, navigate]);
+    codeClient.requestCode();
+  };
 
+  // 🔜 Apple login placeholder
   const handleAppleLogin = () => {
-    alert("Apple login not yet implemented");
+    alert("Apple login coming soon!");
   };
 
   return (
@@ -111,7 +126,7 @@ export const Login = () => {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setShowPassword((prev) => !prev)}
                 className="absolute right-3 top-2.5 text-gray-400 hover:text-white"
               >
                 {showPassword ? <AiFillEyeInvisible /> : <AiFillEye />}
@@ -123,10 +138,10 @@ export const Login = () => {
             type="submit"
             disabled={loading}
             className={`w-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-semibold ${
-              loading ? 'opacity-70 cursor-not-allowed' : ''
+              loading ? "opacity-70 cursor-not-allowed" : ""
             }`}
           >
-            {loading ? (
+            {loading && (
               <svg
                 className="animate-spin h-5 w-5 mr-2 text-white"
                 xmlns="http://www.w3.org/2000/svg"
@@ -140,7 +155,7 @@ export const Login = () => {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                 />
               </svg>
-            ) : null}
+            )}
             {loading ? "Logging in..." : "Log in"}
           </button>
         </form>
@@ -156,11 +171,11 @@ export const Login = () => {
         <div className="space-y-3">
           <button
             type="button"
-            disabled
-            className="w-full flex items-center justify-center bg-white text-black font-medium py-2 rounded-md opacity-70 cursor-not-allowed"
+            onClick={handleGoogleLogin}
+            className="w-full flex items-center justify-center bg-white text-black font-medium py-2 rounded-md hover:bg-gray-100"
           >
             <img src="/google-logo.png" alt="Google" className="h-5 w-5 mr-3" />
-            One Tap enabled
+            Login with Google
           </button>
 
           <button
