@@ -20,11 +20,12 @@ export const Login = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false); // ⬅️ spinner state for Google button
 
   const baseUrl = process.env.REACT_APP_API_BASE_URL;
   const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "";
 
-  // 💡 Regular login
+  // Regular login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -42,7 +43,7 @@ export const Login = () => {
     }
   };
 
-  // ✅ Load Google Identity Services
+  // Load Google Identity Services
   useEffect(() => {
     if (!document.getElementById("google-client-script")) {
       const script = document.createElement("script");
@@ -54,43 +55,55 @@ export const Login = () => {
     }
   }, []);
 
-  // ✅ Handle Google login
+  // Google login
   const handleGoogleLogin = () => {
+    if (googleLoading) return; // prevent double-clicks
     if (!window.google || !googleClientId) {
       alert("Google login is not ready.");
       return;
     }
 
-    const codeClient = window.google.accounts.oauth2.initCodeClient({
-      client_id: googleClientId,
-      scope: "openid email profile",
-      ux_mode: "popup",
-      redirect_uri: "postmessage",
-      callback: async (response: { code: string }) => {
-        if (!response.code) {
-          alert("Google login failed.");
-          return;
-        }
+    setGoogleLoading(true);
 
-        try {
-          const backendRes = await axios.post(`${baseUrl}/auth/google-login`, {
-            code: response.code,
-          });
+    try {
+      const codeClient = window.google.accounts.oauth2.initCodeClient({
+        client_id: googleClientId,
+        scope: "openid email profile",
+        ux_mode: "popup",
+        redirect_uri: "postmessage",
+        callback: async (response: { code?: string }) => {
+          if (!response?.code) {
+            setGoogleLoading(false);
+            alert("Google login failed.");
+            return;
+          }
 
-          const { token, ...user } = backendRes.data;
-          login(user, token);
-          navigate("/dashboard");
-        } catch (err) {
-          console.error("Google login failed:", err);
-          alert("Google login failed.");
-        }
-      },
-    });
+          try {
+            const backendRes = await axios.post(`${baseUrl}/auth/google-login`, {
+              code: response.code,
+            });
 
-    codeClient.requestCode();
+            const { token, ...user } = backendRes.data;
+            login(user, token);
+            navigate("/dashboard");
+          } catch (err) {
+            console.error("Google login failed:", err);
+            alert("Google login failed.");
+          } finally {
+            setGoogleLoading(false);
+          }
+        },
+      });
+
+      codeClient.requestCode();
+    } catch (e) {
+      console.error(e);
+      setGoogleLoading(false);
+      alert("Google login failed to start.");
+    }
   };
 
-  // 🔜 Apple login placeholder
+  // Apple login placeholder
   const handleAppleLogin = () => {
     alert("Apple login coming soon!");
   };
@@ -172,10 +185,34 @@ export const Login = () => {
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center bg-white text-black font-medium py-2 rounded-md hover:bg-gray-100"
+            disabled={googleLoading}
+            className={`w-full flex items-center justify-center bg-white text-black font-medium py-2 rounded-md ${
+              googleLoading ? "opacity-70 cursor-not-allowed" : "hover:bg-gray-100"
+            }`}
           >
-            <img src="/google-logo.png" alt="Google" className="h-5 w-5 mr-3" />
-            Login with Google
+            {googleLoading ? (
+              <>
+                <svg
+                  className="animate-spin h-5 w-5 mr-3 text-black"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Connecting to Google…
+              </>
+            ) : (
+              <>
+                <img src="/google-logo.png" alt="Google" className="h-5 w-5 mr-3" />
+                Login with Google
+              </>
+            )}
           </button>
 
           <button
