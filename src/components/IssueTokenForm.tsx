@@ -1,76 +1,131 @@
-import React, { useState } from 'react';
-import AsyncSelect from 'react-select/async';
-import api from '../api'; // axios instance
+// src/components/IssueTokenForm.tsx
+import React, { useCallback, useMemo, useState } from "react";
+import AsyncSelect from "react-select/async";
+import api from "../api"; // your axios instance
 
-// ✅ Use string for value because backend expects a username string
+// What the select holds and submits
 type OptionType = {
-  value: string; // username
-  label: string; // "Name (username • email)"
+  value: string; // <-- username (required by backend)
+  label: string; // <-- what user sees (Name (username • email))
 };
+
+/** Normalize one user row from any reasonable backend shape */
+function toOption(u: any): OptionType | null {
+  // Derive username from common variants; fallback to email's local-part
+  const username: string | undefined =
+    u?.username ??
+    u?.userName ??
+    u?.user_name ??
+    u?.login ??
+    (typeof u?.email === "string" ? u.email.split("@")[0] : undefined);
+
+  if (!username) return null;
+
+  const name: string =
+    u?.name ??
+    u?.fullName ??
+    u?.displayName ??
+    u?.profileName ??
+    username;
+
+  const email: string | undefined = u?.email ?? u?.emailAddress ?? u?.mail;
+
+  const base = `${name} (${username}`;
+  const label = email ? `${base} • ${email})` : `${base})`;
+
+  return { value: String(username), label };
+}
+
+/** Small debounce helper for loadOptions to limit requests while typing */
+function debouncePromise<F extends (...args: any[]) => Promise<any>>(fn: F, ms = 250) {
+  let timer: any;
+  let pending: { resolve: (v: any) => void; reject: (e: any) => void } | null = null;
+  return (...args: Parameters<F>): Promise<Awaited<ReturnType<F>>> =>
+    new Promise((resolve, reject) => {
+      if (timer) clearTimeout(timer);
+      pending = { resolve, reject };
+      timer = setTimeout(() => {
+        fn(...args)
+          .then((res) => pending?.resolve(res))
+          .catch((e) => pending?.reject(e))
+          .finally(() => {
+            pending = null;
+          });
+      }, ms);
+    });
+}
 
 const IssueTokenForm: React.FC = () => {
   const [selectedRecipient, setSelectedRecipient] = useState<OptionType | null>(null);
-  const [amount, setAmount] = useState('');
-  const [expirationDate, setExpirationDate] = useState('');
-  const [remarks, setRemarks] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [amount, setAmount] = useState<string>("");
+  const [expirationDate, setExpirationDate] = useState<string>("");
+  const [remarks, setRemarks] = useState<string>("");
+  const [success, setSuccess] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
-  // 🔎 Load options from backend
-  const loadOptions = async (inputValue: string): Promise<OptionType[]> => {
-    if (!inputValue || inputValue.trim().length < 2) return [];
+  // ---- Async options loader -------------------------------------------------
+  const fetchOptions = useCallback(async (inputValue: string): Promise<OptionType[]> => {
+    const q = (inputValue ?? "").trim();
+    if (q.length < 2) return []; // don't query for 0–1 characters
+
     try {
-      const res = await api.get(`/user/search-users?query=${encodeURIComponent(inputValue)}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      const res = await api.get(`/user/search-users`, {
+        params: { query: q },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
-      // Expecting each user: { id, username, name, email }
-      return (res.data || []).map((user: any) => ({
-        value: user.username, // ← EXACTLY what /token/issue expects as "recipient"
-        label: `${user.name ?? user.username} (${user.username}${user.email ? ` • ${user.email}` : ''})`,
-      }));
-    } catch (err) {
-      console.error('Failed to load users:', err);
+      // API might return an array or wrap inside {users|items|data}
+      const raw: any[] = Array.isArray(res.data)
+        ? res.data
+        : res.data?.users ?? res.data?.items ?? res.data?.data ?? [];
+
+      const options = raw
+        .map(toOption)
+        .filter((o: OptionType | null): o is OptionType => Boolean(o));
+
+      return options;
+    } catch (e) {
+      console.error("Failed to load users", e);
       return [];
     }
-  };
+  }, []);
 
+  // Debounced version to reduce chatter while typing
+  const loadOptions = useMemo(() => debouncePromise(fetchOptions, 250), [fetchOptions]);
+
+  // ---- Submit ---------------------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuccess(false);
-    setError('');
+    setError("");
 
-    if (!selectedRecipient) {
-      setError('Please select a recipient.');
-      return;
-    }
-    if (!amount || Number(amount) <= 0) {
-      setError('Please enter a valid amount.');
-      return;
-    }
+    if (!selectedRecipient) return setError("Please select a recipient.");
+    if (!amount || Number(amount) <= 0) return setError("Please enter a valid amount.");
 
     const payload = {
-      recipient: selectedRecipient.value, // ← username string
+      recipient: selectedRecipient.value, // username string
       amount: Number(amount),
-      remarks,
-      expirationDate: expirationDate || null, // backend can handle null or optional
+      remarks: remarks || null,
+      expirationDate: expirationDate || null, // backend can accept null
     };
 
     try {
-      const response = await api.post('/token/issue', payload, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      const response = await api.post("/token/issue", payload, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
       if (response.status === 200) {
         setSuccess(true);
         setSelectedRecipient(null);
-        setAmount('');
-        setExpirationDate('');
-        setRemarks('');
+        setAmount("");
+        setExpirationDate("");
+        setRemarks("");
+      } else {
+        setError("Failed to issue token.");
       }
     } catch (err: any) {
-      console.error('Issue token failed:', err);
-      setError(err.response?.data || 'Failed to issue token.');
+      console.error("Issue token failed:", err);
+      setError(err?.response?.data ?? "Failed to issue token.");
     }
   };
 
@@ -82,34 +137,44 @@ const IssueTokenForm: React.FC = () => {
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Recipient */}
         <div>
           <label className="block text-sm mb-1 text-white">Recipient</label>
           <AsyncSelect<OptionType, false>
             isClearable
             cacheOptions
-            defaultOptions
+            defaultOptions={false} // no initial fetch; only when typing
             loadOptions={loadOptions}
             value={selectedRecipient}
-            onChange={(option) => setSelectedRecipient(option)}
+            onChange={(opt) => setSelectedRecipient(opt)}
+            getOptionValue={(o) => o.value} // EXPLICIT: never infer
+            getOptionLabel={(o) => o.label} // EXPLICIT: never infer
             placeholder="Search by name, username, or email"
+            noOptionsMessage={({ inputValue }) =>
+              (inputValue ?? "").trim().length < 2
+                ? "Type at least 2 characters…"
+                : "No users found"
+            }
             styles={{
               control: (base) => ({
                 ...base,
-                backgroundColor: '#374151',
-                borderColor: '#4B5563',
+                backgroundColor: "#374151",
+                borderColor: "#4B5563",
               }),
-              input: (base) => ({ ...base, color: '#fff' }),
-              singleValue: (base) => ({ ...base, color: '#fff' }),
-              menu: (base) => ({ ...base, backgroundColor: '#1F2937' }),
+              input: (base) => ({ ...base, color: "#fff" }),
+              singleValue: (base) => ({ ...base, color: "#fff" }),
+              menu: (base) => ({ ...base, backgroundColor: "#1F2937" }),
               option: (base, state) => ({
                 ...base,
-                backgroundColor: state.isFocused ? '#3B82F6' : '#1F2937',
-                color: '#fff',
+                backgroundColor: state.isFocused ? "#3B82F6" : "#1F2937",
+                color: "#fff",
               }),
+              placeholder: (base) => ({ ...base, color: "#9CA3AF" }),
             }}
           />
         </div>
 
+        {/* Amount */}
         <div>
           <label className="block text-sm mb-1 text-white">Amount</label>
           <input
@@ -123,6 +188,7 @@ const IssueTokenForm: React.FC = () => {
           />
         </div>
 
+        {/* Expiration */}
         <div>
           <label className="block text-sm mb-1 text-white">Expiration Date (optional)</label>
           <input
@@ -133,6 +199,7 @@ const IssueTokenForm: React.FC = () => {
           />
         </div>
 
+        {/* Remarks */}
         <div>
           <label className="block text-sm mb-1 text-white">Remarks</label>
           <textarea
@@ -144,9 +211,11 @@ const IssueTokenForm: React.FC = () => {
           />
         </div>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {/* Messages */}
+        {error && <p className="text-red-400 text-sm">{String(error)}</p>}
         {success && <p className="text-green-400 text-sm">Token issued successfully ✅</p>}
 
+        {/* Submit */}
         <div>
           <button
             type="submit"

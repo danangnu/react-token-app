@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import api from '../api';
 
 interface SentToken {
-  date: string;
-  recipient: string;
+  issuedAt: string;
+  recipientName: string;
   amount: number;
   status: string;
   remarks: string;
@@ -51,7 +51,7 @@ const SentTokens: React.FC = () => {
             {tokens.map((token, index) => (
               <tr key={index} className="border-t border-gray-700 hover:bg-gray-700/30">
                 <td className="px-4 py-2 whitespace-nowrap">
-                  {new Date(token.date).toLocaleString(undefined, {
+                  {new Date(token.issuedAt).toLocaleString(undefined, {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -59,7 +59,7 @@ const SentTokens: React.FC = () => {
                     minute: '2-digit',
                   })}
                 </td>
-                <td className="px-4 py-2">{token.recipient}</td>
+                <td className="px-4 py-2">{token.recipientName}</td>
                 <td className="px-4 py-2">{token.amount}</td>
                 <td className="px-4 py-2">{token.status}</td>
                 <td className="px-4 py-2">{token.remarks}</td>
