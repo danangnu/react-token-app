@@ -2,27 +2,32 @@ import React, { useState } from 'react';
 import AsyncSelect from 'react-select/async';
 import api from '../api'; // axios instance
 
-interface OptionType {
-  value: number;
-  label: string;
-}
+// ✅ Use string for value because backend expects a username string
+type OptionType = {
+  value: string; // username
+  label: string; // "Name (username • email)"
+};
 
 const IssueTokenForm: React.FC = () => {
   const [selectedRecipient, setSelectedRecipient] = useState<OptionType | null>(null);
   const [amount, setAmount] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
   const [remarks, setRemarks] = useState('');
-  const [, setSuccess] = useState(false);
-  const [, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
+  // 🔎 Load options from backend
   const loadOptions = async (inputValue: string): Promise<OptionType[]> => {
+    if (!inputValue || inputValue.trim().length < 2) return [];
     try {
-      const res = await api.get(`/user/search-users?query=${inputValue}`, {
+      const res = await api.get(`/user/search-users?query=${encodeURIComponent(inputValue)}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      return res.data.map((user: any) => ({
-        value: user.username,
-        label: user.display,
+
+      // Expecting each user: { id, username, name, email }
+      return (res.data || []).map((user: any) => ({
+        value: user.username, // ← EXACTLY what /token/issue expects as "recipient"
+        label: `${user.name ?? user.username} (${user.username}${user.email ? ` • ${user.email}` : ''})`,
       }));
     } catch (err) {
       console.error('Failed to load users:', err);
@@ -39,17 +44,21 @@ const IssueTokenForm: React.FC = () => {
       setError('Please select a recipient.');
       return;
     }
+    if (!amount || Number(amount) <= 0) {
+      setError('Please enter a valid amount.');
+      return;
+    }
+
+    const payload = {
+      recipient: selectedRecipient.value, // ← username string
+      amount: Number(amount),
+      remarks,
+      expirationDate: expirationDate || null, // backend can handle null or optional
+    };
 
     try {
-      const response = await api.post('/token/issue', {
-        recipient: selectedRecipient.value,
-        amount: Number(amount),
-        remarks,
-        expirationDate,
-      }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+      const response = await api.post('/token/issue', payload, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
       if (response.status === 200) {
@@ -60,6 +69,7 @@ const IssueTokenForm: React.FC = () => {
         setRemarks('');
       }
     } catch (err: any) {
+      console.error('Issue token failed:', err);
       setError(err.response?.data || 'Failed to issue token.');
     }
   };
@@ -70,10 +80,12 @@ const IssueTokenForm: React.FC = () => {
         <span className="text-2xl">🎯</span>
         <span>Issue Token</span>
       </h2>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm mb-1 text-white">Recipient</label>
-          <AsyncSelect
+          <AsyncSelect<OptionType, false>
+            isClearable
             cacheOptions
             defaultOptions
             loadOptions={loadOptions}
@@ -85,20 +97,10 @@ const IssueTokenForm: React.FC = () => {
                 ...base,
                 backgroundColor: '#374151',
                 borderColor: '#4B5563',
-                color: '#fff',
               }),
-              input: (base) => ({
-                ...base,
-                color: '#fff',
-              }),
-              singleValue: (base) => ({
-                ...base,
-                color: '#fff',
-              }),
-              menu: (base) => ({
-                ...base,
-                backgroundColor: '#1F2937',
-              }),
+              input: (base) => ({ ...base, color: '#fff' }),
+              singleValue: (base) => ({ ...base, color: '#fff' }),
+              menu: (base) => ({ ...base, backgroundColor: '#1F2937' }),
               option: (base, state) => ({
                 ...base,
                 backgroundColor: state.isFocused ? '#3B82F6' : '#1F2937',
@@ -112,6 +114,8 @@ const IssueTokenForm: React.FC = () => {
           <label className="block text-sm mb-1 text-white">Amount</label>
           <input
             type="number"
+            min="0"
+            step="1"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="w-full px-4 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -120,7 +124,7 @@ const IssueTokenForm: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-sm mb-1 text-white">Expiration Date</label>
+          <label className="block text-sm mb-1 text-white">Expiration Date (optional)</label>
           <input
             type="date"
             value={expirationDate}
@@ -136,13 +140,18 @@ const IssueTokenForm: React.FC = () => {
             onChange={(e) => setRemarks(e.target.value)}
             className="w-full px-4 py-2 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={3}
+            placeholder="Optional notes…"
           />
         </div>
+
+        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {success && <p className="text-green-400 text-sm">Token issued successfully ✅</p>}
 
         <div>
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded"
+            disabled={!selectedRecipient}
+            className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded"
           >
             Issue Token
           </button>
