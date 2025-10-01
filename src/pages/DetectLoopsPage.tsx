@@ -3,12 +3,55 @@ import ReactFlow, { Background, Controls, Edge, Node, Position } from 'reactflow
 import 'reactflow/dist/style.css';
 import api from '../api';
 
-interface Debt {
-  id: number;
+type Debt = {
+  id?: number;
   fromUserId: number;
   toUserId: number;
   amount: number;
-  isSettled: boolean;
+  isSettled?: boolean;
+};
+
+// Try to coerce various shapes from the backend into Debt[][]
+function normalizeCycles(raw: any): Debt[][] {
+  if (!raw) return [];
+
+  // Case: { cycles: [...] }
+  if (Array.isArray(raw?.cycles)) return normalizeCycles(raw.cycles);
+
+  // Case: already Debt[][]
+  if (Array.isArray(raw) && raw.every((item: any) => Array.isArray(item))) {
+    return raw.map((arr: any[]) =>
+      arr
+        .map((d) => ({
+          fromUserId: Number(d.fromUserId ?? d.FromUserId ?? d.source ?? d.Source ?? d.from ?? d.From),
+          toUserId: Number(d.toUserId ?? d.ToUserId ?? d.target ?? d.Target ?? d.to ?? d.To),
+          amount: Number(d.amount ?? d.Amount ?? d.value ?? 0),
+          isSettled: Boolean(d.isSettled ?? d.IsSettled ?? false),
+          id: d.id ?? d.Id,
+        }))
+        .filter((d) => Number.isFinite(d.fromUserId) && Number.isFinite(d.toUserId))
+    );
+  }
+
+  // Case: a single Debt[] (wrap as one cycle)
+  if (Array.isArray(raw)) {
+    // Array of objects -> treat it as 1 cycle
+    if (raw.every((d) => typeof d === 'object')) {
+      const oneCycle = raw
+        .map((d) => ({
+          fromUserId: Number(d.fromUserId ?? d.FromUserId ?? d.source ?? d.Source ?? d.from ?? d.From),
+          toUserId: Number(d.toUserId ?? d.ToUserId ?? d.target ?? d.Target ?? d.to ?? d.To),
+          amount: Number(d.amount ?? d.Amount ?? d.value ?? 0),
+          isSettled: Boolean(d.isSettled ?? d.IsSettled ?? false),
+          id: d.id ?? d.Id,
+        }))
+        .filter((d) => Number.isFinite(d.fromUserId) && Number.isFinite(d.toUserId));
+      return oneCycle.length ? [oneCycle] : [];
+    }
+  }
+
+  // Anything else -> empty
+  return [];
 }
 
 const DetectLoopsPage: React.FC = () => {
@@ -16,35 +59,49 @@ const DetectLoopsPage: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [viewAfterOffset, setViewAfterOffset] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string>('');
 
   const fetchCycles = async () => {
     setLoading(true);
+    setErr('');
     try {
-      const endpoint = viewAfterOffset
-        ? '/debts/offset-cycles'
-        : '/debts/cycles';
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
-      const response = await api[viewAfterOffset ? 'post' : 'get'](endpoint);
-      setCycles(response.data);
+      const endpoint = viewAfterOffset ? '/debts/offset-cycles' : '/debts/cycles';
+      // GET for cycles, POST for offset-cycles (admin only)
+      const response = await (viewAfterOffset
+        ? api.post(endpoint, null, { headers })
+        : api.get(endpoint, { headers }));
+
+      const normalized = normalizeCycles(response.data);
+      setCycles(normalized);
       setCurrentIndex(0);
-    } catch (err) {
-      console.error('Failed to fetch cycles:', err);
+    } catch (e: any) {
+      console.error('Failed to fetch cycles:', e);
+      setErr(e?.response?.data ?? 'Failed to fetch cycles.');
+      setCycles([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchCycles();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewAfterOffset]);
 
   const buildGraphFromCycle = (cycle: Debt[]): { nodes: Node[]; edges: Edge[] } => {
-    const userIds = Array.from(
-      new Set(cycle.flatMap(d => [d.fromUserId, d.toUserId]))
-    );
+    // Collect unique user ids without flatMap
+    const userSet = new Set<number>();
+    for (const d of cycle) {
+      if (Number.isFinite(d.fromUserId)) userSet.add(d.fromUserId);
+      if (Number.isFinite(d.toUserId)) userSet.add(d.toUserId);
+    }
+    const userIds = Array.from(userSet);
 
     const radius = 200;
-    const angleStep = (2 * Math.PI) / userIds.length;
+    const angleStep = userIds.length ? (2 * Math.PI) / userIds.length : 1;
 
     const nodes: Node[] = userIds.map((userId, i) => ({
       id: String(userId),
@@ -81,7 +138,7 @@ const DetectLoopsPage: React.FC = () => {
     return { nodes, edges };
   };
 
-  const currentCycle = cycles[currentIndex] || [];
+  const currentCycle: Debt[] = Array.isArray(cycles[currentIndex]) ? cycles[currentIndex] : [];
   const { nodes, edges } = buildGraphFromCycle(currentCycle);
 
   return (
@@ -106,23 +163,22 @@ const DetectLoopsPage: React.FC = () => {
 
       {loading ? (
         <p className="text-gray-400">Loading cycles...</p>
-      ) : cycles.length === 0 ? (
+      ) : err ? (
+        <p className="text-red-400">{String(err)}</p>
+      ) : !cycles.length ? (
         <p className="text-gray-400">No cycles detected.</p>
       ) : (
-        <div className="h-[500px] bg-gray-800 rounded-lg border border-gray-700">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            fitView
-            fitViewOptions={{ padding: 0.5 }}
-          >
-            <Background />
-            <Controls />
-          </ReactFlow>
+        <>
+          <div className="h-[500px] bg-gray-800 rounded-lg border border-gray-700">
+            <ReactFlow nodes={nodes} edges={edges} fitView fitViewOptions={{ padding: 0.5 }}>
+              <Background />
+              <Controls />
+            </ReactFlow>
+          </div>
 
-          <div className="flex justify-between items-center mt-4 px-4">
+          <div className="flex justify-between items-center mt-4 px-1">
             <button
-              onClick={() => setCurrentIndex(i => Math.max(0, i - 1))}
+              onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
               disabled={currentIndex === 0}
               className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50"
             >
@@ -132,14 +188,14 @@ const DetectLoopsPage: React.FC = () => {
               Cycle {currentIndex + 1} of {cycles.length}
             </span>
             <button
-              onClick={() => setCurrentIndex(i => Math.min(cycles.length - 1, i + 1))}
+              onClick={() => setCurrentIndex((i) => Math.min(cycles.length - 1, i + 1))}
               disabled={currentIndex === cycles.length - 1}
               className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50"
             >
               Next →
             </button>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
